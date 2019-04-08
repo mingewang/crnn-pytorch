@@ -17,7 +17,8 @@ from torch import optim
 from torch.autograd import Variable
 from torch import Tensor
 from torch.utils.data import DataLoader
-from warpctc_pytorch import CTCLoss
+#from warpctc_pytorch import CTCLoss
+from torch.nn import CTCLoss
 
 from test import test
 
@@ -38,7 +39,8 @@ from test import test
 @click.option('--gpu', type=str, default='0', help='List of GPUs for parallel training, e.g. 0,1,2,3')
 def main(data_path, abc, seq_proj, backend, snapshot, input_size, base_lr, step_size, max_iter, batch_size, output_dir, test_epoch, test_init, gpu):
     os.environ["CUDA_VISIBLE_DEVICES"] = gpu
-    cuda = True if gpu is not '' else False
+    #cuda = True if gpu is not '' else False
+    cuda = torch.cuda.is_available()
 
     input_size = [int(x) for x in input_size.split('x')]
     transform = Compose([
@@ -88,12 +90,13 @@ def main(data_path, abc, seq_proj, backend, snapshot, input_size, base_lr, step_
             if cuda:
                 imgs = imgs.cuda()
             preds = net(imgs).cpu()
-            pred_lens = Variable(Tensor([preds.size(0)] * batch_size).int())
-            loss = loss_function(preds, labels, pred_lens, label_lens) / batch_size
+            pred_lens =  Variable(Tensor(batch_size).int())
+            #loss = loss_function(preds, labels, pred_lens, label_lens) / batch_size
+            loss = loss_function(preds, labels, pred_lens, label_lens)
             loss.backward()
-            nn.utils.clip_grad_norm(net.parameters(), 10.0)
-            loss_mean.append(loss.data[0])
-            status = "epoch: {}; iter: {}; lr: {}; loss_mean: {}; loss: {}".format(epoch_count, lr_scheduler.last_iter, lr_scheduler.get_lr(), np.mean(loss_mean), loss.data[0])
+            nn.utils.clip_grad_norm_(net.parameters(), 10.0)
+            loss_mean.append(loss.data.item())
+            status = "epoch: {}; iter: {}; lr: {}; loss_mean: {}; loss: {}".format(epoch_count, lr_scheduler.last_iter, lr_scheduler.get_lr(), np.mean(loss_mean), loss.data.item())
             iterator.set_description(status)
             optimizer.step()
             lr_scheduler.step()

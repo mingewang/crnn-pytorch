@@ -62,10 +62,12 @@ def main(data_path, abc, seq_proj, backend, snapshot, input_size, base_lr, step_
     acc_best = 0
     epoch_count = 0
     while True:
-        if (test_epoch is not None and epoch_count != 0 and epoch_count % test_epoch == 0) or (test_init and epoch_count == 0):
+        #if (test_epoch is not None and epoch_count != 0 and epoch_count % test_epoch == 0) or (test_init and epoch_count == 0):
+        if (test_epoch is not None and epoch_count != 0 and epoch_count % test_epoch == 0) or (test_init and epoch_count > 0):
             print("Test phase")
             data.set_mode("test")
             net = net.eval()
+            #import pdb; pdb.set_trace()
             acc, avg_ed = test(net, data, data.get_abc(), cuda, visualize=False)
             net = net.train()
             data.set_mode("train")
@@ -76,6 +78,7 @@ def main(data_path, abc, seq_proj, backend, snapshot, input_size, base_lr, step_
             print("acc: {}\tacc_best: {}; avg_ed: {}".format(acc, acc_best, avg_ed))
 
         data_loader = DataLoader(data, batch_size=batch_size, num_workers=1, shuffle=True, collate_fn=text_collate)
+        #import pdb; pdb.set_trace()
         loss_mean = []
         iterator = tqdm(data_loader)
         iter_count = 0
